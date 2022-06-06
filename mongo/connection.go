@@ -1,4 +1,4 @@
-package connection
+package mongo
 
 import (
 	"context"
@@ -19,23 +19,14 @@ const PRIMARY_PREFERRED = "PRIMARY_PREFERRED"
 const DB_TIMEOUT = 10 * time.Second
 const DB_TIMEOUT_MANY = 20 * time.Second
 
-type MongoDBManager struct {
-	uri           string
-	authSource    string
-	clientOptions *options.ClientOptions
-	client        *mongo.Client
-}
+var client *mongo.Client
+var db *mongo.Database
 
-func (manager *MongoDBManager) Connect(uri string, authSource, readPreference string) {
+func Connect(uri string, authSource, readPreference string) {
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(uri).SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
 
-	if authSource != "" {
-		credential := options.Credential{}
-		credential.AuthSource = authSource
-		clientOptions.SetAuth(credential)
-		clientOptions.SetMaxConnIdleTime(10 * time.Minute)
-	}
+	clientOptions.SetMaxConnIdleTime(10 * time.Minute)
 	clientOptions.SetWriteConcern(writeconcern.New(writeconcern.W(1)))
 	clientOptions.SetReadConcern(readconcern.Local())
 
@@ -59,17 +50,24 @@ func (manager *MongoDBManager) Connect(uri string, authSource, readPreference st
 		fmt.Println(err)
 		panic(nil)
 	}
-	manager.uri = uri
-	manager.authSource = authSource
-	manager.clientOptions = clientOptions
-	manager.client = client
-	fmt.Printf("Connections to MongoDB %s %s\n", manager.uri, manager.authSource)
+
+	db = client.Database(authSource)
+
+	fmt.Printf("Connections to MongoDB %s %s\n", uri, authSource)
 }
 
-func (manager *MongoDBManager) Disconnect() {
-	err := manager.client.Disconnect(context.TODO())
+func Disconnect() {
+	err := client.Disconnect(context.TODO())
 	if err != nil {
 		panic(nil)
 	}
-	fmt.Printf("Connections to MongoDB %s %s closed\n", manager.uri, manager.authSource)
+	fmt.Printf("Connections to MongoDB %s closed\n", db.Name())
+}
+
+func GetDatabase() *mongo.Database {
+	return db
+}
+
+func GetCollection(collection string, opts ...*options.CollectionOptions) *mongo.Collection {
+	return db.Collection(collection, opts...)
 }

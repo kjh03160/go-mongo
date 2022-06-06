@@ -1,15 +1,14 @@
 package main
 
 import (
-	"mongo-orm/connection"
+	"mongo-orm/mongo"
 	"os"
 )
 
 func main() {
-	db := connection.MongoDBManager{}
 	mongoURI := os.Getenv("local")
-	db.Connect(mongoURI, "admin", connection.SECONDARY_PREFERRED)
-
+	mongo.Connect(mongoURI, "local", mongo.SECONDARY_PREFERRED)
+	defer mongo.Disconnect()
 	r := SetRouter()
 	r.Run()
 }
