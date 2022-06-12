@@ -57,3 +57,28 @@ func (col *Collection) FindOneAndDelete(filter interface{}, opts ...*options.Fin
 	}
 	return singleResult, nil
 }
+
+func (col *Collection) UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	updateResult, err := col.Collection.UpdateOne(context.Background(), filter, update, opts...)
+	if err != nil {
+		return nil, errorType.InternalError(col.Collection.Name(), filter, err, update)
+	}
+	return updateResult, nil
+}
+
+func (col *Collection) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	updateResult, err := col.Collection.UpdateMany(context.Background(), filter, update, opts...)
+	if err != nil {
+		return nil, errorType.InternalError(col.Collection.Name(), filter, err, update)
+	}
+	return updateResult, nil
+}
+
+func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, err) {
+	result, err := col.Collection.ReplaceOne(context.Background(), filter, document, opts...)
+	if err != nil {
+		return nil, errorType.InternalError(col.Collection.Name(), filter, err, document)
+	}
+	return result, nil
+
+}
