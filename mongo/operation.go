@@ -74,7 +74,7 @@ func (col *Collection) UpdateMany(filter interface{}, update interface{}, opts .
 	return updateResult, nil
 }
 
-func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, err) {
+func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	result, err := col.Collection.ReplaceOne(context.Background(), filter, document, opts...)
 	if err != nil {
 		return nil, errorType.InternalError(col.Collection.Name(), filter, err, document)
