@@ -80,5 +80,20 @@ func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts
 		return nil, errorType.InternalError(col.Collection.Name(), filter, err, document)
 	}
 	return result, nil
+}
 
+func (col *Collection) DeleteOne(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	deleteResult, err := col.Collection.DeleteOne(context.Background(), filter, opts...)
+	if err != nil {
+		return nil, errorType.InternalError(col.Collection.Name(), filter, err)
+	}
+	return deleteResult, nil
+}
+
+func (col *Collection) DeleteMany(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	deleteResult, err := col.Collection.DeleteMany(context.Background(), filter, opts...)
+	if err != nil {
+		return nil, errorType.InternalError(col.Collection.Name(), filter, err)
+	}
+	return deleteResult, nil
 }
