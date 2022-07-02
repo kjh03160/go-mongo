@@ -2,6 +2,8 @@ package mongo
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"mongo-orm/errorType"
 
@@ -23,12 +25,34 @@ func (col *Collection) evaluateAndDecodeSingleResult(result *mongo.SingleResult,
 	return nil
 }
 
-func (col *Collection) FindAll(filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
+func (col *Collection) decodeCursor(cursor *mongo.Cursor, t reflect.Type) interface{} {
+	slice := reflect.MakeSlice(reflect.SliceOf(t), 0, 10)
+	for cursor.Next(context.Background()) {
+		doc := reflect.New(t).Interface()
+		if err := cursor.Decode(doc); err != nil {
+			fmt.Println(err.Error())
+		}
+		slice = reflect.Append(slice, reflect.ValueOf(doc).Elem())
+	}
+	return slice.Interface()
+}
+
+func getTypeofInterface(x interface{}) reflect.Type {
+	var t reflect.Type
+	if xt, ok := x.(reflect.Type); ok {
+		t = xt
+	} else {
+		t = reflect.TypeOf(x)
+	}
+	return t
+}
+
+func (col *Collection) FindAll(x interface{}, filter interface{}, opts ...*options.FindOptions) (interface{}, error) {
 	cursor, err := col.Collection.Find(context.Background(), filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
-	return cursor, nil
+	return col.decodeCursor(cursor, getTypeofInterface(x)), nil
 }
 
 func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOneOptions) error {
