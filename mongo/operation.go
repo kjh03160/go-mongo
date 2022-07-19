@@ -38,12 +38,24 @@ func (col *Collection) decodeCursor(cursor *mongo.Cursor, t reflect.Type) interf
 	return slice.Interface()
 }
 
-func (col *Collection) FindAll(x interface{}, filter interface{}, opts ...*options.FindOptions) (interface{}, error) {
-	cursor, err := col.Collection.Find(context.Background(), filter, opts...)
+func (col *Collection) findAll(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
+	return col.Collection.Find(ctx, filter, opts...)
+}
+
+func (col *Collection) FindAll(requiredExample interface{}, filter interface{}, opts ...*options.FindOptions) (interface{}, error) {
+	cursor, err := col.findAll(context.Background(), filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
-	return col.decodeCursor(cursor, util.GetInterfaceType(x)), nil
+	return col.decodeCursor(cursor, util.GetInterfaceType(requiredExample)), nil
+}
+
+func (col *Collection) FindAllTS(requiredExample interface{}, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) (interface{}, error) {
+	cursor, err := col.findAll(*sessCtx, filter, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	return col.decodeCursor(cursor, util.GetInterfaceType(requiredExample)), nil
 }
 
 func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOneOptions) error {

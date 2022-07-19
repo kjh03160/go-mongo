@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type BaseModel struct {
