@@ -58,6 +58,16 @@ func IsDBInternalErr(err error) bool {
 	}
 }
 
+func IsDecodeError(err error) bool {
+	switch err.(type) {
+	case decodeError,
+		*decodeError:
+		return true
+	default:
+		return false
+	}
+}
+
 func ParseAndReturnDBError(err error, collection string, filter, update, doc interface{}) error {
 	if err == mongo.ErrNoDocuments {
 		return NotFoundError(collection, filter, update, doc)
