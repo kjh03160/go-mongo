@@ -38,7 +38,7 @@ func (col *Collection) decodeCursor(cursor *mongo.Cursor, t reflect.Type) interf
 	return slice.Interface()
 }
 
-func (col *Collection) decodeCursorV2(cursor *mongo.Cursor, slice interface{}) error {
+func (col *Collection) decodeCursorAll(cursor *mongo.Cursor, slice interface{}) error {
 	if err := cursor.All(context.Background(), slice); err != nil {
 		return err
 	}
@@ -65,12 +65,12 @@ func (col *Collection) FindAllTS(requiredExample interface{}, filter interface{}
 	return col.decodeCursor(cursor, util.GetInterfaceType(requiredExample)), nil
 }
 
-func (col *Collection) FindAllV2(resultSlice interface{}, filter interface{}, opts ...*options.FindOptions) error {
+func (col *Collection) FindAllAndDecode(resultSlice interface{}, filter interface{}, opts ...*options.FindOptions) error {
 	cursor, err := col.findAll(context.Background(), filter, opts...)
 	if err != nil {
 		return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
-	if err = col.decodeCursorV2(cursor, resultSlice); err != nil {
+	if err = col.decodeCursorAll(cursor, resultSlice); err != nil {
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
 	}
 
