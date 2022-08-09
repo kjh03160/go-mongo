@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"mongo-orm/errorType"
+	"mongo-orm/util"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -37,22 +38,24 @@ func (col *Collection) decodeCursor(cursor *mongo.Cursor, t reflect.Type) interf
 	return slice.Interface()
 }
 
-func getTypeofInterface(x interface{}) reflect.Type {
-	var t reflect.Type
-	if xt, ok := x.(reflect.Type); ok {
-		t = xt
-	} else {
-		t = reflect.TypeOf(x)
-	}
-	return t
+func (col *Collection) findAll(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
+	return col.Collection.Find(ctx, filter, opts...)
 }
 
-func (col *Collection) FindAll(x interface{}, filter interface{}, opts ...*options.FindOptions) (interface{}, error) {
-	cursor, err := col.Collection.Find(context.Background(), filter, opts...)
+func (col *Collection) FindAll(requiredExample interface{}, filter interface{}, opts ...*options.FindOptions) (interface{}, error) {
+	cursor, err := col.findAll(context.Background(), filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
-	return col.decodeCursor(cursor, getTypeofInterface(x)), nil
+	return col.decodeCursor(cursor, util.GetInterfaceType(requiredExample)), nil
+}
+
+func (col *Collection) FindAllTS(requiredExample interface{}, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) (interface{}, error) {
+	cursor, err := col.findAll(*sessCtx, filter, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	return col.decodeCursor(cursor, util.GetInterfaceType(requiredExample)), nil
 }
 
 func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOneOptions) error {
@@ -92,6 +95,12 @@ func (col *Collection) UpdateOne(filter interface{}, update interface{}, opts ..
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, update, nil)
 	}
+	if updateResult.MatchedCount == 0 {
+		return updateResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, update, nil)
+	}
+	if updateResult.ModifiedCount == 0 {
+		return updateResult, errorType.ParseAndReturnDBError(errorType.NotModifiedAnyErr, col.Name(), filter, update, nil)
+	}
 	return updateResult, nil
 }
 
@@ -99,6 +108,12 @@ func (col *Collection) UpdateMany(filter interface{}, update interface{}, opts .
 	updateResult, err := col.Collection.UpdateMany(context.Background(), filter, update, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, update, nil)
+	}
+	if updateResult.MatchedCount == 0 {
+		return updateResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, update, nil)
+	}
+	if updateResult.ModifiedCount == 0 {
+		return updateResult, errorType.ParseAndReturnDBError(errorType.NotModifiedAnyErr, col.Name(), filter, update, nil)
 	}
 	return updateResult, nil
 }
@@ -108,6 +123,12 @@ func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, document)
 	}
+	if result.MatchedCount == 0 {
+		return result, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, document)
+	}
+	if result.ModifiedCount == 0 {
+		return result, errorType.ParseAndReturnDBError(errorType.NotModifiedAnyErr, col.Name(), filter, nil, document)
+	}
 	return result, nil
 }
 
@@ -116,6 +137,9 @@ func (col *Collection) DeleteOne(filter interface{}, opts ...*options.DeleteOpti
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
+	if deleteResult.DeletedCount == 0 {
+		return deleteResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, nil)
+	}
 	return deleteResult, nil
 }
 
@@ -123,6 +147,9 @@ func (col *Collection) DeleteMany(filter interface{}, opts ...*options.DeleteOpt
 	deleteResult, err := col.Collection.DeleteMany(context.Background(), filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	if deleteResult.DeletedCount == 0 {
+		return deleteResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, nil)
 	}
 	return deleteResult, nil
 }

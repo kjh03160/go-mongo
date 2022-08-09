@@ -6,7 +6,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-var SingleResultErr = errors.New("single result is nil")
+var (
+	SingleResultErr   = errors.New("single result is nil")
+	NotMatchedAnyErr  = errors.New("no documents have been matched")
+	NotModifiedAnyErr = errors.New("no documents have been modified")
+)
 
 type basicQueryInfo struct {
 	collection string
@@ -24,36 +28,50 @@ type duplicatedKeyError struct {
 	error
 }
 
+type notModifiedError struct {
+	basicQueryInfo
+	error
+}
+
 type internalError struct {
 	basicQueryInfo
 	error
 }
 
-func NotFoundError(col string, filter, update, doc interface{}) error {
-	err := notFoundError{}
+func (err *basicQueryInfo) setBasicError(col string, filter, update, doc interface{}) {
 	err.filter = filter
 	err.collection = col
 	err.update = update
 	err.doc = doc
+}
+
+func GetNotFoundErrorType() error {
+	return notFoundError{}
+}
+
+func NotFoundError(col string, filter, update, doc interface{}) error {
+	err := notFoundError{}
+	err.setBasicError(col, filter, update, doc)
 	return err
 }
 
 func DuplicatedKeyError(col string, filter, update, doc interface{}, mongoErr error) error {
 	err := duplicatedKeyError{}
-	err.filter = filter
-	err.collection = col
-	err.update = update
-	err.doc = doc
+	err.setBasicError(col, filter, update, doc)
+	err.error = mongoErr
+	return err
+}
+
+func NotModifiedError(col string, filter, update, doc interface{}, mongoErr error) error {
+	err := notModifiedError{}
+	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
 }
 
 func InternalError(col string, filter, update, doc interface{}, mongoErr error) error {
 	err := internalError{}
-	err.collection = col
-	err.filter = filter
-	err.update = update
-	err.doc = doc
+	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
 }

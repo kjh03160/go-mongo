@@ -25,7 +25,13 @@ func main() {
 		m := &mongo.Collection{Collection: collection}
 		var t data.Account
 		if err := m.FindOne(&t, bson.M{"account_id": accountId}); err != nil {
+			// 1. error catching by type switch
 			if errorType.IsNotFoundErr(err) {
+				context.JSON(http.StatusNotFound, err.Error())
+				return
+			}
+			// 2. error catching using reflect
+			if errorType.IsErrorTypeOf(err, errorType.GetNotFoundErrorType()) {
 				context.JSON(http.StatusNotFound, err.Error())
 				return
 			}
