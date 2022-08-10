@@ -50,7 +50,7 @@ func main() {
 
 	r.GET("/find-all/v2", func(context *gin.Context) {
 		var result []data.Account
-		err := m.FindAllV2(&result, bson.M{})
+		err := m.FindAllAndDecode(&result, bson.M{})
 		if err != nil {
 			if errorType.IsDecodeError(err) {
 				fmt.Println("decode err")
