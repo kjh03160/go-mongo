@@ -172,3 +172,19 @@ func (col *Collection) DeleteMany(filter interface{}, opts ...*options.DeleteOpt
 	}
 	return deleteResult, nil
 }
+
+func (col *Collection) CountDocuments(filter interface{}, opts ...*options.CountOptions) (int, error) {
+	count, err := col.Collection.CountDocuments(context.Background(), filter, opts...)
+	if err != nil {
+		return 0, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	return int(count), nil
+}
+
+func (col *Collection) EstimatedDocumentCount(opts ...*options.EstimatedDocumentCountOptions) (int, error) {
+	count, err := col.Collection.EstimatedDocumentCount(context.Background(), opts...)
+	if err != nil {
+		return 0, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, nil)
+	}
+	return int(count), nil
+}
