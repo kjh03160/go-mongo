@@ -48,6 +48,16 @@ func IsDuplicatedKeyErr(err error) bool {
 	}
 }
 
+func IsTimeoutError(err error) bool {
+	switch err.(type) {
+	case timeoutError,
+		*timeoutError:
+		return true
+	default:
+		return false
+	}
+}
+
 func IsDBInternalErr(err error) bool {
 	switch err.(type) {
 	case internalError,
@@ -83,6 +93,10 @@ func ParseAndReturnDBError(err error, collection string, filter, update, doc int
 
 	if mongo.IsDuplicateKeyError(err) {
 		return DuplicatedKeyError(collection, filter, update, doc, err)
+	}
+
+	if mongo.IsTimeout(err) {
+		return TimeoutError(collection, filter, update, doc, err)
 	}
 
 	return InternalError(collection, filter, update, doc, err)

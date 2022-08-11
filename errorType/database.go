@@ -33,6 +33,11 @@ type notModifiedError struct {
 	error
 }
 
+type timeoutError struct {
+	basicQueryInfo
+	error
+}
+
 type internalError struct {
 	basicQueryInfo
 	error
@@ -64,6 +69,13 @@ func DuplicatedKeyError(col string, filter, update, doc interface{}, mongoErr er
 
 func NotModifiedError(col string, filter, update, doc interface{}, mongoErr error) error {
 	err := notModifiedError{}
+	err.setBasicError(col, filter, update, doc)
+	err.error = mongoErr
+	return err
+}
+
+func TimeoutError(col string, filter, update, doc interface{}, mongoErr error) error {
+	err := timeoutError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
