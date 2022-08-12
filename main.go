@@ -21,7 +21,7 @@ func main() {
 	defer mongo.Disconnect()
 	m := &mongo.Collection{Collection: collection}
 
-	r := SetRouter()
+	r := gin.Default()
 	r.GET("/find-one", func(context *gin.Context) {
 		query := context.Query("account_id")
 		accountId, _ := strconv.Atoi(query)
@@ -62,6 +62,33 @@ func main() {
 				return
 			}
 		}
+		context.JSON(http.StatusOK, result)
+	})
+
+	r.GET("/insert-many", func(context *gin.Context) {
+		var result []*data.Account
+		err := m.FindAllAndDecode(&result, bson.M{})
+		if err != nil {
+			if errorType.IsDecodeError(err) {
+				fmt.Println("decode err")
+				context.JSON(http.StatusInternalServerError, err.Error())
+				return
+			} else {
+				fmt.Println("internal err")
+				context.JSON(http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
+		accounts := result[:2]
+		var slice []interface{}
+		for _, v := range accounts {
+			slice = append(slice, v)
+		}
+		many, err := m.InsertMany(slice)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(many)
 		context.JSON(http.StatusOK, result)
 	})
 
