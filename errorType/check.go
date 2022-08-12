@@ -20,8 +20,7 @@ func IsErrorTypeOf(err error, v interface{}) bool {
 
 func IsNotFoundErr(err error) bool {
 	switch err.(type) {
-	case notFoundError,
-		*notFoundError:
+	case *notFoundError:
 		return true
 	default:
 		return false
@@ -30,8 +29,7 @@ func IsNotFoundErr(err error) bool {
 
 func IsNotModifiedAnyErr(err error) bool {
 	switch err.(type) {
-	case notModifiedError,
-		*notModifiedError:
+	case *notModifiedError:
 		return true
 	default:
 		return false
@@ -40,8 +38,7 @@ func IsNotModifiedAnyErr(err error) bool {
 
 func IsDuplicatedKeyErr(err error) bool {
 	switch err.(type) {
-	case duplicatedKeyError,
-		*duplicatedKeyError:
+	case *duplicatedKeyError:
 		return true
 	default:
 		return false
@@ -50,8 +47,16 @@ func IsDuplicatedKeyErr(err error) bool {
 
 func IsTimeoutError(err error) bool {
 	switch err.(type) {
-	case timeoutError,
-		*timeoutError:
+	case *timeoutError:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsMongoClientError(err error) bool {
+	switch err.(type) {
+	case *mongoClientError:
 		return true
 	default:
 		return false
@@ -60,8 +65,9 @@ func IsTimeoutError(err error) bool {
 
 func IsDBInternalErr(err error) bool {
 	switch err.(type) {
-	case internalError,
-		*internalError:
+	case *internalError,
+		*timeoutError,
+		*mongoClientError:
 		return true
 	default:
 		return false
@@ -70,8 +76,7 @@ func IsDBInternalErr(err error) bool {
 
 func IsDecodeError(err error) bool {
 	switch err.(type) {
-	case decodeError,
-		*decodeError:
+	case *decodeError:
 		return true
 	default:
 		return false

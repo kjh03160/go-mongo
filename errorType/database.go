@@ -43,6 +43,10 @@ type internalError struct {
 	error
 }
 
+type mongoClientError struct {
+	error
+}
+
 func (err *basicQueryInfo) setBasicError(col string, filter, update, doc interface{}) {
 	err.filter = filter
 	err.collection = col
@@ -51,53 +55,69 @@ func (err *basicQueryInfo) setBasicError(col string, filter, update, doc interfa
 }
 
 func GetNotFoundErrorType() error {
-	return notFoundError{}
+	return &notFoundError{}
 }
 
 func NotFoundError(col string, filter, update, doc interface{}) error {
-	err := notFoundError{}
+	err := &notFoundError{}
 	err.setBasicError(col, filter, update, doc)
 	return err
 }
 
 func DuplicatedKeyError(col string, filter, update, doc interface{}, mongoErr error) error {
-	err := duplicatedKeyError{}
+	err := &duplicatedKeyError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
 }
 
 func NotModifiedError(col string, filter, update, doc interface{}, mongoErr error) error {
-	err := notModifiedError{}
+	err := &notModifiedError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
 }
 
 func TimeoutError(col string, filter, update, doc interface{}, mongoErr error) error {
-	err := timeoutError{}
+	err := &timeoutError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
 }
 
 func InternalError(col string, filter, update, doc interface{}, mongoErr error) error {
-	err := internalError{}
+	err := &internalError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
 }
 
-func (e notFoundError) Error() string {
+func MongoClientError(mongoErr error) error {
+	return &mongoClientError{mongoErr}
+}
+
+func (e *notFoundError) Error() string {
 	return fmt.Sprintf("%s not found. ", e.collection) + getBasicInfoErrorMsg(e.basicQueryInfo)
 }
 
-func (e duplicatedKeyError) Error() string {
+func (e *notModifiedError) Error() string {
+	return fmt.Sprintf("%s not modified. ", e.collection) + getBasicInfoErrorMsg(e.basicQueryInfo)
+}
+
+func (e *duplicatedKeyError) Error() string {
 	return fmt.Sprintf("%s failed to write due to duplicated key, err: %s ", e.collection, e.error.Error()) + getBasicInfoErrorMsg(e.basicQueryInfo)
 }
 
-func (e internalError) Error() string {
+func (e *timeoutError) Error() string {
+	return fmt.Sprintf("%s timeout, err: %s ", e.collection, e.error.Error()) + getBasicInfoErrorMsg(e.basicQueryInfo)
+}
+
+func (e *internalError) Error() string {
 	return fmt.Sprintf("mongo internal err: %s ", e.error.Error()) + getBasicInfoErrorMsg(e.basicQueryInfo)
+}
+
+func (e *mongoClientError) Error() string {
+	return fmt.Sprintf("mongo client err: %s ", e.error.Error())
 }
 
 func getBasicInfoErrorMsg(e basicQueryInfo) string {

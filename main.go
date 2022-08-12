@@ -17,9 +17,8 @@ import (
 func main() {
 	mongoURI := os.Getenv("local")
 	mongo.Connect(mongoURI, "sample_analytics", mongo.SECONDARY_PREFERRED)
-	collection := mongo.GetCollection("accounts")
+	m := mongo.MakeCollection(mongo.MongoClient, "sample_analytics", "accounts")
 	defer mongo.Disconnect()
-	m := &mongo.Collection{Collection: collection}
 
 	r := gin.Default()
 	r.GET("/find-one", func(context *gin.Context) {
@@ -45,7 +44,8 @@ func main() {
 
 	r.GET("/find-all", func(context *gin.Context) {
 		all, _ := m.FindAll(data.Account{}, bson.M{})
-		context.JSON(http.StatusOK, all.([]data.Account))
+		result := all.([]data.Account)
+		context.JSON(http.StatusOK, result)
 	})
 
 	r.GET("/find-all/v2", func(context *gin.Context) {
@@ -66,7 +66,7 @@ func main() {
 	})
 
 	r.GET("/insert-many", func(context *gin.Context) {
-		var result []*data.Account
+		var result []data.Account
 		err := m.FindAllAndDecode(&result, bson.M{})
 		if err != nil {
 			if errorType.IsDecodeError(err) {
