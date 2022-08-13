@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"mongo-orm/errorType"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
@@ -19,7 +21,11 @@ const PRIMARY_PREFERRED = "PRIMARY_PREFERRED"
 const DB_TIMEOUT = 10 * time.Second
 const DB_TIMEOUT_MANY = 20 * time.Second
 
-var client *mongo.Client
+type Client struct {
+	*mongo.Client
+}
+
+var MongoClient *Client
 var db *mongo.Database
 
 func Connect(uri string, authSource, readPreference string) {
@@ -40,34 +46,51 @@ func Connect(uri string, authSource, readPreference string) {
 		clientOptions.SetReadPreference(readpref.SecondaryPreferred())
 	}
 
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	c, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		fmt.Println(err)
 		panic(nil)
 	}
-	err = client.Ping(context.TODO(), nil)
+	MongoClient = &Client{c}
+	err = MongoClient.Ping(context.TODO(), nil)
 	if err != nil {
 		fmt.Println(err)
 		panic(nil)
 	}
 
-	db = client.Database(authSource)
+	db = MongoClient.Database(authSource)
 
 	fmt.Printf("Connections to MongoDB %s %s\n", uri, authSource)
 }
 
 func Disconnect() {
-	err := client.Disconnect(context.TODO())
+	err := MongoClient.Disconnect(context.TODO())
 	if err != nil {
 		panic(nil)
 	}
 	fmt.Printf("Connections to MongoDB %s closed\n", db.Name())
 }
 
-func GetDatabase() *mongo.Database {
+func (manager *Client) GetDatabase() *mongo.Database {
 	return db
 }
 
-func GetCollection(collection string, opts ...*options.CollectionOptions) *mongo.Collection {
-	return db.Collection(collection, opts...)
+func (manager *Client) GetCollection(databaseName, collection string) *mongo.Collection {
+	return manager.Database(databaseName).Collection(collection)
+}
+
+func (manager *Client) Transaction(readPreference *readpref.ReadPref, function func(sessCtx mongo.SessionContext) (interface{}, error)) error {
+	session, err := manager.Client.StartSession()
+	if err != nil {
+		return errorType.MongoClientError(err)
+	}
+	defer session.EndSession(context.Background())
+
+	opt := options.TransactionOptions{}
+	opt.SetReadPreference(readPreference)
+	_, err = session.WithTransaction(context.Background(), function, &opt)
+	if err != nil {
+		return err
+	}
+	return nil
 }

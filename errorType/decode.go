@@ -8,7 +8,7 @@ type decodeError struct {
 }
 
 func DecodeError(col string, filter, update, doc interface{}, mongoErr error) error {
-	err := internalError{}
+	err := &decodeError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
