@@ -12,7 +12,8 @@
   - manager 레이어에서 다양한 에러(not found, duplicate key, timeout, decode 등)가 발생할 수 있는데, service 레이어에서는 이를 어떻게 판별할 수 있을까?
 
 ## Basic concept
-- manager 레이어에서는 로그를 남기지 않고, db 쿼리를 실행한 정보와 에러를 wrapping하여 리턴하고, service 레이어에서는 필요한 에러를 핸들링하고 로그 레벨을 판별하여 로그를 찍는다.
-- `error`가 `nil`일 경우, 리턴되는 값(document 데이터)은 `nil`이 아님과 쿼리 성공을 보장한다.
-- manager 레이어에서는 db error를 한번 wrapping하여, service 레이어에서는 mongo driver에서 내뱉는 에러를 핸들링하는 것이 아닌, 내부에서 정의한 에러를 핸들링힌다.
-- `singleResult`, `Cursor` 등 매번 Decode하는 중복 코드를 없앤다. 
+1. manager 레이어에서는 로그를 남기지 않고, db 쿼리를 실행한 정보와 에러를 wrapping하여 리턴한다.
+2. service 레이어에서는  mongo driver의 에러를 핸들링하는 것이 아닌,  manager 내부에서 정의한 에러를  핸들링하고 로그 레벨을 판별하여 로그를 찍는다.
+3. `error`가 `nil`일 경우, 리턴되는 값(document 데이터)은 `nil`이 아님과 쿼리 성공을 보장한다.
+    - `(userDoc, error)`의 리턴 형식을 가질 때, user not found의 경우 error를 리턴해야하나? or `userDoc`을 `nil`, error도 `nil`로 해야하나?
+4. `singleResult`, `Cursor` 등 매번 Decode하는 중복 코드를 없앤다.
