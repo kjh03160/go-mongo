@@ -17,7 +17,11 @@ func (col *Collection) FindAll(requiredExample interface{}, filter interface{}, 
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
-	return DecodeCursor(cursor, util.GetInterfaceType(requiredExample)), nil
+	result, err := DecodeCursor(cursor, util.GetInterfaceType(requiredExample))
+	if err != nil {
+		return nil, errorType.DecodeError(col.Name(), filter, nil, nil, err)
+	}
+	return result, nil
 }
 
 func (col *Collection) FindAllTS(requiredExample interface{}, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) (interface{}, error) {

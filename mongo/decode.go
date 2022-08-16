@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"mongo-orm/errorType"
@@ -20,16 +19,17 @@ func EvaluateAndDecodeSingleResult(result *mongo.SingleResult, v interface{}) er
 	return nil
 }
 
-func DecodeCursor(cursor *mongo.Cursor, t reflect.Type) interface{} {
-	slice := reflect.MakeSlice(reflect.SliceOf(t), 0, 10)
+func DecodeCursor(cursor *mongo.Cursor, t reflect.Type) (interface{}, error) {
+	defer cursor.Close(context.Background())
+	slice := reflect.MakeSlice(reflect.SliceOf(t), 0, 0)
 	for cursor.Next(context.Background()) {
 		doc := reflect.New(t).Interface()
 		if err := cursor.Decode(doc); err != nil {
-			fmt.Println(err.Error())
+			return nil, err
 		}
 		slice = reflect.Append(slice, reflect.ValueOf(doc).Elem())
 	}
-	return slice.Interface()
+	return slice.Interface(), nil
 }
 
 func DecodeCursorAll(cursor *mongo.Cursor, slice interface{}) error {
