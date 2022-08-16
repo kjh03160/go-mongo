@@ -6,6 +6,7 @@ import (
 	"mongo-orm/errorType"
 	"mongo-orm/util"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -54,7 +55,7 @@ func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOn
 	defer ctxCancel()
 	singleResult := col.findOne(ctx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -65,7 +66,7 @@ func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOn
 func (col *Collection) FindOneTS(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneOptions) error {
 	singleResult := col.findOne(*sessCtx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -78,7 +79,7 @@ func (col *Collection) FindOneAndModify(data, filter interface{}, update interfa
 	defer ctxCancel()
 	singleResult := col.findOneAndModify(ctx, filter, update, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -91,7 +92,7 @@ func (col *Collection) FindOneAndReplace(data, filter interface{}, replacement i
 	defer ctxCancel()
 	singleResult := col.findOneAndReplace(ctx, filter, replacement, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -104,7 +105,7 @@ func (col *Collection) FindOneAndDelete(data, filter interface{}, opts ...*optio
 	defer ctxCancel()
 	singleResult := col.findOneAndDelete(ctx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
