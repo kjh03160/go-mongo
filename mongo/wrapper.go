@@ -4,58 +4,32 @@ import (
 	"context"
 
 	"mongo-orm/errorType"
-	"mongo-orm/util"
 
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (col *Collection) FindAll(requiredExample interface{}, filter interface{}, opts ...*options.FindOptions) (interface{}, error) {
+func (col *Collection[T]) FindAll(filter interface{}, opts ...*options.FindOptions) ([]T, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	cursor, err := col.findAll(ctx, filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 	}
-	result, err := DecodeCursor(cursor, util.GetInterfaceType(requiredExample))
+	resultSlice, err := DecodeCursor[T](cursor)
 	if err != nil {
 		return nil, errorType.DecodeError(col.Name(), filter, nil, nil, err)
 	}
-	return result, nil
+	return resultSlice, nil
 }
 
-func (col *Collection) FindAllTS(requiredExample interface{}, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) (interface{}, error) {
-	cursor, err := col.findAll(*sessCtx, filter, opts...)
-	if err != nil {
-		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
-	}
-	result, err := DecodeCursor(cursor, util.GetInterfaceType(requiredExample))
-	if err != nil {
-		return nil, errorType.DecodeError(col.Name(), filter, nil, nil, err)
-	}
-	return result, nil
-}
-
-func (col *Collection) FindAllAndDecode(resultSlice interface{}, filter interface{}, opts ...*options.FindOptions) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer ctxCancel()
-	cursor, err := col.findAll(ctx, filter, opts...)
-	if err != nil {
-		return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
-	}
-	if err = DecodeCursorAll(cursor, resultSlice); err != nil {
-		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
-	}
-	return nil
-}
-
-func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOneOptions) error {
+func (col *Collection[T]) FindOne(data, filter interface{}, opts ...*options.FindOneOptions) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	singleResult := col.findOne(ctx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -63,23 +37,12 @@ func (col *Collection) FindOne(data, filter interface{}, opts ...*options.FindOn
 	return nil
 }
 
-func (col *Collection) FindOneTS(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneOptions) error {
-	singleResult := col.findOne(*sessCtx, filter, opts...)
-	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
-			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
-		}
-		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
-	}
-	return nil
-}
-
-func (col *Collection) FindOneAndModify(data, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
+func (col *Collection[T]) FindOneAndModify(data, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	singleResult := col.findOneAndModify(ctx, filter, update, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -87,12 +50,12 @@ func (col *Collection) FindOneAndModify(data, filter interface{}, update interfa
 	return nil
 }
 
-func (col *Collection) FindOneAndReplace(data, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) error {
+func (col *Collection[T]) FindOneAndReplace(data, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	singleResult := col.findOneAndReplace(ctx, filter, replacement, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -100,12 +63,12 @@ func (col *Collection) FindOneAndReplace(data, filter interface{}, replacement i
 	return nil
 }
 
-func (col *Collection) FindOneAndDelete(data, filter interface{}, opts ...*options.FindOneAndDeleteOptions) error {
+func (col *Collection[T]) FindOneAndDelete(data, filter interface{}, opts ...*options.FindOneAndDeleteOptions) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	singleResult := col.findOneAndDelete(ctx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
-		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
 			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
 		}
 		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
@@ -113,7 +76,7 @@ func (col *Collection) FindOneAndDelete(data, filter interface{}, opts ...*optio
 	return nil
 }
 
-func (col *Collection) InsertOne(document interface{}, opts ...*options.InsertOneOptions) (interface{}, error) {
+func (col *Collection[T]) InsertOne(document interface{}, opts ...*options.InsertOneOptions) (interface{}, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	insertOneResult, err := col.insertOne(ctx, document, opts...)
@@ -123,7 +86,7 @@ func (col *Collection) InsertOne(document interface{}, opts ...*options.InsertOn
 	return insertOneResult.InsertedID, nil
 }
 
-func (col *Collection) InsertMany(documents []interface{}, opts ...*options.InsertManyOptions) (interface{}, error) {
+func (col *Collection[T]) InsertMany(documents []interface{}, opts ...*options.InsertManyOptions) (interface{}, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	insertOneResult, err := col.insertMany(ctx, documents, opts...)
@@ -133,7 +96,7 @@ func (col *Collection) InsertMany(documents []interface{}, opts ...*options.Inse
 	return insertOneResult.InsertedIDs, nil
 }
 
-func (col *Collection) UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (col *Collection[T]) UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	updateResult, err := col.updateOne(ctx, filter, update, opts...)
@@ -143,13 +106,10 @@ func (col *Collection) UpdateOne(filter interface{}, update interface{}, opts ..
 	if updateResult.MatchedCount == 0 {
 		return updateResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, update, nil)
 	}
-	if updateResult.ModifiedCount == 0 {
-		return updateResult, errorType.ParseAndReturnDBError(errorType.NotModifiedAnyErr, col.Name(), filter, update, nil)
-	}
 	return updateResult, nil
 }
 
-func (col *Collection) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (col *Collection[T]) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	updateResult, err := col.updateMany(ctx, filter, update, opts...)
@@ -159,13 +119,10 @@ func (col *Collection) UpdateMany(filter interface{}, update interface{}, opts .
 	if updateResult.MatchedCount == 0 {
 		return updateResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, update, nil)
 	}
-	if updateResult.ModifiedCount == 0 {
-		return updateResult, errorType.ParseAndReturnDBError(errorType.NotModifiedAnyErr, col.Name(), filter, update, nil)
-	}
 	return updateResult, nil
 }
 
-func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+func (col *Collection[T]) ReplaceOne(filter interface{}, document interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	result, err := col.replaceOne(ctx, filter, document, opts...)
@@ -175,13 +132,10 @@ func (col *Collection) ReplaceOne(filter interface{}, document interface{}, opts
 	if result.MatchedCount == 0 {
 		return result, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, document)
 	}
-	if result.ModifiedCount == 0 {
-		return result, errorType.ParseAndReturnDBError(errorType.NotModifiedAnyErr, col.Name(), filter, nil, document)
-	}
 	return result, nil
 }
 
-func (col *Collection) DeleteOne(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (col *Collection[T]) DeleteOne(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	deleteResult, err := col.deleteOne(ctx, filter, opts...)
@@ -194,7 +148,7 @@ func (col *Collection) DeleteOne(filter interface{}, opts ...*options.DeleteOpti
 	return deleteResult, nil
 }
 
-func (col *Collection) DeleteMany(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (col *Collection[T]) DeleteMany(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	deleteResult, err := col.deleteMany(ctx, filter, opts...)
@@ -207,7 +161,7 @@ func (col *Collection) DeleteMany(filter interface{}, opts ...*options.DeleteOpt
 	return deleteResult, nil
 }
 
-func (col *Collection) CountDocuments(filter interface{}, opts ...*options.CountOptions) (int, error) {
+func (col *Collection[T]) CountDocuments(filter interface{}, opts ...*options.CountOptions) (int, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	count, err := col.countDocuments(ctx, filter, opts...)
@@ -217,7 +171,7 @@ func (col *Collection) CountDocuments(filter interface{}, opts ...*options.Count
 	return int(count), nil
 }
 
-func (col *Collection) EstimatedDocumentCount(opts ...*options.EstimatedDocumentCountOptions) (int, error) {
+func (col *Collection[T]) EstimatedDocumentCount(opts ...*options.EstimatedDocumentCountOptions) (int, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	count, err := col.estimatedDocumentCount(ctx, opts...)
@@ -225,4 +179,193 @@ func (col *Collection) EstimatedDocumentCount(opts ...*options.EstimatedDocument
 		return 0, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, nil)
 	}
 	return int(count), nil
+}
+
+func (col *Collection[T]) BulkWrite(models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
+	defer ctxCancel()
+	bulkWriteResult, err := col.bulkWrite(ctx, models, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, models, nil)
+	}
+	return bulkWriteResult, nil
+}
+
+func (col *Collection[T]) Aggregate(pipeline interface{}, opts ...*options.AggregateOptions) ([]T, error) {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
+	defer ctxCancel()
+	cursor, err := col.aggregate(ctx, pipeline, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), pipeline, nil, nil)
+	}
+	resultSlice, err := DecodeCursor[T](cursor)
+	if err != nil {
+		return nil, errorType.DecodeError(col.Name(), pipeline, nil, nil, err)
+	}
+	return resultSlice, nil
+}
+
+func (col *Collection[T]) FindAllTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) ([]T, error) {
+	cursor, err := col.findAll(*sessCtx, filter, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	resultSlice, err := DecodeCursor[T](cursor)
+	if err != nil {
+		return nil, errorType.DecodeError(col.Name(), filter, nil, nil, err)
+	}
+	return resultSlice, nil
+}
+
+func (col *Collection[T]) FindOneTS(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneOptions) error {
+	singleResult := col.findOne(*sessCtx, filter, opts...)
+	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
+		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
+			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+		}
+		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
+	}
+	return nil
+}
+
+func (col *Collection[T]) FindOneAndModifyTS(data, filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndUpdateOptions) error {
+	singleResult := col.findOneAndModify(*sessCtx, filter, update, opts...)
+	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
+			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+		}
+		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
+	}
+	return nil
+}
+
+func (col *Collection[T]) FindOneAndReplaceTS(data, filter interface{}, replacement interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndReplaceOptions) error {
+	singleResult := col.findOneAndReplace(*sessCtx, filter, replacement, opts...)
+	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
+			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+		}
+		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
+	}
+	return nil
+}
+
+func (col *Collection[T]) FindOneAndDeleteTS(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndDeleteOptions) error {
+	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
+	defer ctxCancel()
+	singleResult := col.findOneAndDelete(ctx, filter, opts...)
+	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
+		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
+			return errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+		}
+		return errorType.DecodeError(col.Name(), filter, nil, nil, err)
+	}
+	return nil
+}
+
+func (col *Collection[T]) InsertOneTS(document interface{}, sessCtx *mongo.SessionContext, opts ...*options.InsertOneOptions) (interface{}, error) {
+	insertOneResult, err := col.insertOne(*sessCtx, document, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, document)
+	}
+	return insertOneResult.InsertedID, nil
+}
+
+func (col *Collection[T]) InsertManyTS(documents []interface{}, sessCtx *mongo.SessionContext, opts ...*options.InsertManyOptions) (interface{}, error) {
+	insertOneResult, err := col.insertMany(*sessCtx, documents, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, documents)
+	}
+	return insertOneResult.InsertedIDs, nil
+}
+
+func (col *Collection[T]) UpdateOneTS(filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	updateResult, err := col.updateOne(*sessCtx, filter, update, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, update, nil)
+	}
+	if updateResult.MatchedCount == 0 {
+		return updateResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, update, nil)
+	}
+	return updateResult, nil
+}
+
+func (col *Collection[T]) UpdateManyTS(filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	updateResult, err := col.updateMany(*sessCtx, filter, update, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, update, nil)
+	}
+	if updateResult.MatchedCount == 0 {
+		return updateResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, update, nil)
+	}
+	return updateResult, nil
+}
+
+func (col *Collection[T]) ReplaceOneTS(filter interface{}, document interface{}, sessCtx *mongo.SessionContext, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+	result, err := col.replaceOne(*sessCtx, filter, document, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, document)
+	}
+	if result.MatchedCount == 0 {
+		return result, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, document)
+	}
+	return result, nil
+}
+
+func (col *Collection[T]) DeleteOneTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	deleteResult, err := col.deleteOne(*sessCtx, filter, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	if deleteResult.DeletedCount == 0 {
+		return deleteResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, nil)
+	}
+	return deleteResult, nil
+}
+
+func (col *Collection[T]) DeleteManyTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	deleteResult, err := col.deleteMany(*sessCtx, filter, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	if deleteResult.DeletedCount == 0 {
+		return deleteResult, errorType.ParseAndReturnDBError(errorType.NotMatchedAnyErr, col.Name(), filter, nil, nil)
+	}
+	return deleteResult, nil
+}
+
+func (col *Collection[T]) CountDocumentsTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.CountOptions) (int, error) {
+	count, err := col.countDocuments(*sessCtx, filter, opts...)
+	if err != nil {
+		return 0, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
+	}
+	return int(count), nil
+}
+
+func (col *Collection[T]) EstimatedDocumentCountTS(sessCtx *mongo.SessionContext, opts ...*options.EstimatedDocumentCountOptions) (int, error) {
+	count, err := col.estimatedDocumentCount(*sessCtx, opts...)
+	if err != nil {
+		return 0, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, nil)
+	}
+	return int(count), nil
+}
+
+func (col *Collection[T]) BulkWriteTS(models []mongo.WriteModel, sessCtx *mongo.SessionContext, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	bulkWriteResult, err := col.bulkWrite(*sessCtx, models, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, models, nil)
+	}
+	return bulkWriteResult, nil
+}
+
+func (col *Collection[T]) AggregateTS(pipeline interface{}, sessCtx *mongo.SessionContext, opts ...*options.AggregateOptions) ([]T, error) {
+	cursor, err := col.aggregate(*sessCtx, pipeline, opts...)
+	if err != nil {
+		return nil, errorType.ParseAndReturnDBError(err, col.Name(), pipeline, nil, nil)
+	}
+	resultSlice, err := DecodeCursor[T](cursor)
+	if err != nil {
+		return nil, errorType.DecodeError(col.Name(), pipeline, nil, nil, err)
+	}
+	return resultSlice, nil
 }
