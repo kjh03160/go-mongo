@@ -205,7 +205,7 @@ func (col *Collection[T]) Aggregate(pipeline interface{}, opts ...*options.Aggre
 	return resultSlice, nil
 }
 
-func (col *Collection[T]) FindAllTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) ([]T, error) {
+func (col *Collection[T]) FindAllWithTrx(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOptions) ([]T, error) {
 	cursor, err := col.findAll(*sessCtx, filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
@@ -217,7 +217,7 @@ func (col *Collection[T]) FindAllTS(filter interface{}, sessCtx *mongo.SessionCo
 	return resultSlice, nil
 }
 
-func (col *Collection[T]) FindOneTS(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneOptions) error {
+func (col *Collection[T]) FindOneWithTrx(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneOptions) error {
 	singleResult := col.findOne(*sessCtx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
 		if err == mongo.ErrNoDocuments || errors.Unwrap(err) == context.DeadlineExceeded {
@@ -228,7 +228,7 @@ func (col *Collection[T]) FindOneTS(data, filter interface{}, sessCtx *mongo.Ses
 	return nil
 }
 
-func (col *Collection[T]) FindOneAndModifyTS(data, filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndUpdateOptions) error {
+func (col *Collection[T]) FindOneAndModifyWithTrx(data, filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndUpdateOptions) error {
 	singleResult := col.findOneAndModify(*sessCtx, filter, update, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
 		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
@@ -239,7 +239,7 @@ func (col *Collection[T]) FindOneAndModifyTS(data, filter interface{}, update in
 	return nil
 }
 
-func (col *Collection[T]) FindOneAndReplaceTS(data, filter interface{}, replacement interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndReplaceOptions) error {
+func (col *Collection[T]) FindOneAndReplaceWithTrx(data, filter interface{}, replacement interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndReplaceOptions) error {
 	singleResult := col.findOneAndReplace(*sessCtx, filter, replacement, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
 		if err == mongo.ErrNoDocuments || errors.Is(err, context.DeadlineExceeded) {
@@ -250,7 +250,7 @@ func (col *Collection[T]) FindOneAndReplaceTS(data, filter interface{}, replacem
 	return nil
 }
 
-func (col *Collection[T]) FindOneAndDeleteTS(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndDeleteOptions) error {
+func (col *Collection[T]) FindOneAndDeleteWithTrx(data, filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.FindOneAndDeleteOptions) error {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer ctxCancel()
 	singleResult := col.findOneAndDelete(ctx, filter, opts...)
@@ -263,7 +263,7 @@ func (col *Collection[T]) FindOneAndDeleteTS(data, filter interface{}, sessCtx *
 	return nil
 }
 
-func (col *Collection[T]) InsertOneTS(document interface{}, sessCtx *mongo.SessionContext, opts ...*options.InsertOneOptions) (interface{}, error) {
+func (col *Collection[T]) InsertOneWithTrx(document interface{}, sessCtx *mongo.SessionContext, opts ...*options.InsertOneOptions) (interface{}, error) {
 	insertOneResult, err := col.insertOne(*sessCtx, document, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, document)
@@ -271,7 +271,7 @@ func (col *Collection[T]) InsertOneTS(document interface{}, sessCtx *mongo.Sessi
 	return insertOneResult.InsertedID, nil
 }
 
-func (col *Collection[T]) InsertManyTS(documents []interface{}, sessCtx *mongo.SessionContext, opts ...*options.InsertManyOptions) (interface{}, error) {
+func (col *Collection[T]) InsertManyWithTrx(documents []interface{}, sessCtx *mongo.SessionContext, opts ...*options.InsertManyOptions) (interface{}, error) {
 	insertOneResult, err := col.insertMany(*sessCtx, documents, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, documents)
@@ -279,7 +279,7 @@ func (col *Collection[T]) InsertManyTS(documents []interface{}, sessCtx *mongo.S
 	return insertOneResult.InsertedIDs, nil
 }
 
-func (col *Collection[T]) UpdateOneTS(filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (col *Collection[T]) UpdateOneWithTrx(filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	updateResult, err := col.updateOne(*sessCtx, filter, update, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, update, nil)
@@ -290,7 +290,7 @@ func (col *Collection[T]) UpdateOneTS(filter interface{}, update interface{}, se
 	return updateResult, nil
 }
 
-func (col *Collection[T]) UpdateManyTS(filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (col *Collection[T]) UpdateManyWithTrx(filter interface{}, update interface{}, sessCtx *mongo.SessionContext, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	updateResult, err := col.updateMany(*sessCtx, filter, update, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, update, nil)
@@ -301,7 +301,7 @@ func (col *Collection[T]) UpdateManyTS(filter interface{}, update interface{}, s
 	return updateResult, nil
 }
 
-func (col *Collection[T]) ReplaceOneTS(filter interface{}, document interface{}, sessCtx *mongo.SessionContext, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+func (col *Collection[T]) ReplaceOneWithTrx(filter interface{}, document interface{}, sessCtx *mongo.SessionContext, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	result, err := col.replaceOne(*sessCtx, filter, document, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, document)
@@ -312,7 +312,7 @@ func (col *Collection[T]) ReplaceOneTS(filter interface{}, document interface{},
 	return result, nil
 }
 
-func (col *Collection[T]) DeleteOneTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (col *Collection[T]) DeleteOneWithTrx(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	deleteResult, err := col.deleteOne(*sessCtx, filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
@@ -323,7 +323,7 @@ func (col *Collection[T]) DeleteOneTS(filter interface{}, sessCtx *mongo.Session
 	return deleteResult, nil
 }
 
-func (col *Collection[T]) DeleteManyTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (col *Collection[T]) DeleteManyWithTrx(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	deleteResult, err := col.deleteMany(*sessCtx, filter, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
@@ -334,7 +334,7 @@ func (col *Collection[T]) DeleteManyTS(filter interface{}, sessCtx *mongo.Sessio
 	return deleteResult, nil
 }
 
-func (col *Collection[T]) CountDocumentsTS(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.CountOptions) (int, error) {
+func (col *Collection[T]) CountDocumentsWithTrx(filter interface{}, sessCtx *mongo.SessionContext, opts ...*options.CountOptions) (int, error) {
 	count, err := col.countDocuments(*sessCtx, filter, opts...)
 	if err != nil {
 		return 0, errorType.ParseAndReturnDBError(err, col.Name(), filter, nil, nil)
@@ -342,7 +342,7 @@ func (col *Collection[T]) CountDocumentsTS(filter interface{}, sessCtx *mongo.Se
 	return int(count), nil
 }
 
-func (col *Collection[T]) EstimatedDocumentCountTS(sessCtx *mongo.SessionContext, opts ...*options.EstimatedDocumentCountOptions) (int, error) {
+func (col *Collection[T]) EstimatedDocumentCountWithTrx(sessCtx *mongo.SessionContext, opts ...*options.EstimatedDocumentCountOptions) (int, error) {
 	count, err := col.estimatedDocumentCount(*sessCtx, opts...)
 	if err != nil {
 		return 0, errorType.ParseAndReturnDBError(err, col.Name(), nil, nil, nil)
@@ -350,7 +350,7 @@ func (col *Collection[T]) EstimatedDocumentCountTS(sessCtx *mongo.SessionContext
 	return int(count), nil
 }
 
-func (col *Collection[T]) BulkWriteTS(models []mongo.WriteModel, sessCtx *mongo.SessionContext, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+func (col *Collection[T]) BulkWriteWithTrx(models []mongo.WriteModel, sessCtx *mongo.SessionContext, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	bulkWriteResult, err := col.bulkWrite(*sessCtx, models, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), nil, models, nil)
@@ -358,7 +358,7 @@ func (col *Collection[T]) BulkWriteTS(models []mongo.WriteModel, sessCtx *mongo.
 	return bulkWriteResult, nil
 }
 
-func (col *Collection[T]) AggregateTS(pipeline interface{}, sessCtx *mongo.SessionContext, opts ...*options.AggregateOptions) ([]T, error) {
+func (col *Collection[T]) AggregateWithTrx(pipeline interface{}, sessCtx *mongo.SessionContext, opts ...*options.AggregateOptions) ([]T, error) {
 	cursor, err := col.aggregate(*sessCtx, pipeline, opts...)
 	if err != nil {
 		return nil, errorType.ParseAndReturnDBError(err, col.Name(), pipeline, nil, nil)
