@@ -1,35 +1,15 @@
 package errorType
 
 import (
-	"reflect"
+	"context"
 
-	"mongo-orm/util"
-
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-func IsErrorTypeOf(err error, v interface{}) bool {
-	t := util.GetInterfaceType(v)
-	errorType := reflect.TypeOf(err)
-
-	if t == errorType {
-		return true
-	}
-	return false
-}
 
 func IsNotFoundErr(err error) bool {
 	switch err.(type) {
 	case *notFoundError:
-		return true
-	default:
-		return false
-	}
-}
-
-func IsNotModifiedAnyErr(err error) bool {
-	switch err.(type) {
-	case *notModifiedError:
 		return true
 	default:
 		return false
@@ -84,23 +64,15 @@ func IsDecodeError(err error) bool {
 }
 
 func ParseAndReturnDBError(err error, collection string, filter, update, doc interface{}) error {
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) || errors.Is(err, NotMatchedAnyErr) {
 		return NotFoundError(collection, filter, update, doc)
-	}
-
-	if err == NotMatchedAnyErr {
-		return NotFoundError(collection, filter, update, doc)
-	}
-
-	if err == NotModifiedAnyErr {
-		return NotModifiedError(collection, filter, update, doc, err)
 	}
 
 	if mongo.IsDuplicateKeyError(err) {
 		return DuplicatedKeyError(collection, filter, update, doc, err)
 	}
 
-	if mongo.IsTimeout(err) {
+	if mongo.IsTimeout(err) || errors.Is(err, context.DeadlineExceeded) {
 		return TimeoutError(collection, filter, update, doc, err)
 	}
 

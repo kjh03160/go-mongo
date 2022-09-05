@@ -7,9 +7,8 @@ import (
 )
 
 var (
-	SingleResultErr   = errors.New("single result is nil")
-	NotMatchedAnyErr  = errors.New("no documents have been matched")
-	NotModifiedAnyErr = errors.New("no documents have been modified")
+	SingleResultErr  = errors.New("single result is nil")
+	NotMatchedAnyErr = errors.New("no documents have been matched")
 )
 
 type basicQueryInfo struct {
@@ -24,11 +23,6 @@ type notFoundError struct {
 }
 
 type duplicatedKeyError struct {
-	basicQueryInfo
-	error
-}
-
-type notModifiedError struct {
 	basicQueryInfo
 	error
 }
@@ -54,10 +48,6 @@ func (err *basicQueryInfo) setBasicError(col string, filter, update, doc interfa
 	err.doc = doc
 }
 
-func GetNotFoundErrorType() error {
-	return &notFoundError{}
-}
-
 func NotFoundError(col string, filter, update, doc interface{}) error {
 	err := &notFoundError{}
 	err.setBasicError(col, filter, update, doc)
@@ -66,13 +56,6 @@ func NotFoundError(col string, filter, update, doc interface{}) error {
 
 func DuplicatedKeyError(col string, filter, update, doc interface{}, mongoErr error) error {
 	err := &duplicatedKeyError{}
-	err.setBasicError(col, filter, update, doc)
-	err.error = mongoErr
-	return err
-}
-
-func NotModifiedError(col string, filter, update, doc interface{}, mongoErr error) error {
-	err := &notModifiedError{}
 	err.setBasicError(col, filter, update, doc)
 	err.error = mongoErr
 	return err
@@ -98,10 +81,6 @@ func MongoClientError(mongoErr error) error {
 
 func (e *notFoundError) Error() string {
 	return fmt.Sprintf("%s not found. ", e.collection) + getBasicInfoErrorMsg(e.basicQueryInfo)
-}
-
-func (e *notModifiedError) Error() string {
-	return fmt.Sprintf("%s not modified. ", e.collection) + getBasicInfoErrorMsg(e.basicQueryInfo)
 }
 
 func (e *duplicatedKeyError) Error() string {

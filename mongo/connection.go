@@ -22,16 +22,17 @@ const DB_TIMEOUT = 10 * time.Second
 const DB_TIMEOUT_MANY = 20 * time.Second
 
 type Client struct {
+	authSource string
 	*mongo.Client
 }
 
 var MongoClient *Client
-var db *mongo.Database
 
-func Connect(uri string, authSource, readPreference string) {
+func Connect(uri string, authSource, readPreference string, maxPoolSize uint64) *Client {
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(uri).SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
 
+	clientOptions.SetMaxPoolSize(maxPoolSize)
 	clientOptions.SetMaxConnIdleTime(10 * time.Minute)
 	clientOptions.SetWriteConcern(writeconcern.New(writeconcern.W(1)))
 	clientOptions.SetReadConcern(readconcern.Local())
@@ -48,47 +49,47 @@ func Connect(uri string, authSource, readPreference string) {
 
 	c, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		fmt.Println(err)
-		panic(nil)
+		panic(err.Error())
 	}
-	MongoClient = &Client{c}
+	MongoClient = &Client{authSource, c}
 	err = MongoClient.Ping(context.TODO(), nil)
 	if err != nil {
-		fmt.Println(err)
-		panic(nil)
+		panic(err.Error())
 	}
-
-	db = MongoClient.Database(authSource)
-
-	fmt.Printf("Connections to MongoDB %s %s\n", uri, authSource)
+	return MongoClient
 }
 
-func Disconnect() {
-	err := MongoClient.Disconnect(context.TODO())
+func (client *Client) Disconnect() {
+	err := client.Client.Disconnect(context.TODO())
 	if err != nil {
 		panic(nil)
 	}
-	fmt.Printf("Connections to MongoDB %s closed\n", db.Name())
+	fmt.Printf("Connections to MongoDB %s closed\n", client.authSource)
 }
 
-func (manager *Client) GetDatabase() *mongo.Database {
-	return db
+func (client *Client) GetDatabase(dbName string) *mongo.Database {
+	return client.Database(dbName)
 }
 
-func (manager *Client) GetCollection(databaseName, collection string) *mongo.Collection {
-	return manager.Database(databaseName).Collection(collection)
+func (client *Client) GetCollection(databaseName, collection string) *mongo.Collection {
+	return client.Database(databaseName).Collection(collection)
 }
 
-func (manager *Client) Transaction(readPreference *readpref.ReadPref, function func(sessCtx mongo.SessionContext) (interface{}, error)) error {
-	session, err := manager.Client.StartSession()
+func (client *Client) Transaction(sessionOpt *options.SessionOptions, trxOpt *options.TransactionOptions, function func(sessCtx mongo.SessionContext) (interface{}, error)) error {
+	if sessionOpt == nil {
+		sessionOpt = &options.SessionOptions{}
+	}
+	if trxOpt == nil {
+		trxOpt = &options.TransactionOptions{}
+	}
+
+	session, err := client.Client.StartSession(sessionOpt)
 	if err != nil {
 		return errorType.MongoClientError(err)
 	}
 	defer session.EndSession(context.Background())
 
-	opt := options.TransactionOptions{}
-	opt.SetReadPreference(readPreference)
-	_, err = session.WithTransaction(context.Background(), function, &opt)
+	_, err = session.WithTransaction(context.Background(), function, trxOpt)
 	if err != nil {
 		return err
 	}
