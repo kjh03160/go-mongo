@@ -3,12 +3,30 @@ package mongo
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func Test_Connection(t *testing.T) {
+func getMongoConfig() *options.ClientOptions {
 	mongoURI := os.Getenv("local")
+
+	clientOptions := options.Client()
+	clientOptions.ApplyURI(mongoURI).SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
+
+	clientOptions.SetMaxPoolSize(100)
+	clientOptions.SetMaxConnIdleTime(10 * time.Minute)
+	clientOptions.SetWriteConcern(writeconcern.New(writeconcern.W(1)))
+	clientOptions.SetReadConcern(readconcern.Local())
+	clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+	return clientOptions
+}
+
+func Test_Connection(t *testing.T) {
 	_ = os.Getenv("user")
 	_ = os.Getenv("password")
 
@@ -16,8 +34,8 @@ func Test_Connection(t *testing.T) {
 		var mongoSecondary *Client
 		var mongoPrimary *Client
 
-		mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-		mongoPrimary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
+		mongoSecondary = Connect("sample_analytics", 10*time.Second, getMongoConfig())
+		mongoPrimary = Connect("sample_analytics", 10*time.Second, getMongoConfig())
 		defer mongoPrimary.Disconnect()
 		defer mongoSecondary.Disconnect()
 		assert.NotNil(t, mongoPrimary.Client)
@@ -30,7 +48,9 @@ func Test_Connection(t *testing.T) {
 			r := recover()
 			assert.NotNil(t, r)
 		}()
-		mongoSecondary = Connect("", "sample_analytics", SECONDARY_PREFERRED, 1)
+		clientOptions := options.Client()
+		clientOptions.ApplyURI("mongoURI").SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
+		mongoSecondary = Connect("sample_analytics", 10*time.Second, clientOptions)
 		assert.Nil(t, mongoSecondary.Client)
 	})
 
@@ -40,7 +60,7 @@ func Test_Connection(t *testing.T) {
 			r := recover()
 			assert.NotNil(t, r)
 		}()
-		mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
+		mongoSecondary = Connect("sample_analytics", 10*time.Second, &options.ClientOptions{})
 		assert.Nil(t, mongoSecondary.Client)
 	})
 
@@ -51,29 +71,20 @@ func Test_Connection(t *testing.T) {
 			assert.NotNil(t, r)
 		}()
 
-		mongoSecondary = Connect(mongoURI, "", SECONDARY_PREFERRED, 1)
-		assert.Nil(t, mongoSecondary.Client)
-	})
-
-	t.Run("connection failed - user", func(t *testing.T) {
-		var mongoSecondary *Client
-		defer func() {
-			r := recover()
-			assert.NotNil(t, r)
-		}()
-
-		mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
+		mongoSecondary = Connect("", 10*time.Second, getMongoConfig())
 		assert.Nil(t, mongoSecondary.Client)
 	})
 }
 
 func Test_GetDatabase(t *testing.T) {
-	mongoURI := os.Getenv("local")
-
 	var mongoSecondary *Client
 	var mongoPrimary *Client
-	mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-	mongoPrimary = Connect(mongoURI, "sample_analytics", PRIMARY, 1)
+	clientOptions := getMongoConfig()
+	clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+	mongoSecondary = Connect("sample_analytics", 10*time.Second, clientOptions)
+	clientOptions2 := getMongoConfig()
+	clientOptions2.SetReadPreference(readpref.PrimaryPreferred())
+	mongoPrimary = Connect("sample_analytics", 10*time.Second, clientOptions2)
 	defer mongoPrimary.Disconnect()
 	defer mongoSecondary.Disconnect()
 	assert.NotNil(t, mongoPrimary.Client)
@@ -87,12 +98,14 @@ func Test_GetDatabase(t *testing.T) {
 }
 
 func Test_GetCollection(t *testing.T) {
-	mongoURI := os.Getenv("local")
-
 	var mongoSecondary *Client
 	var mongoPrimary *Client
-	mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-	mongoPrimary = Connect(mongoURI, "sample_analytics", PRIMARY, 1)
+	clientOptions := getMongoConfig()
+	clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+	mongoSecondary = Connect("sample_analytics", 10*time.Second, clientOptions)
+	clientOptions2 := getMongoConfig()
+	clientOptions2.SetReadPreference(readpref.PrimaryPreferred())
+	mongoPrimary = Connect("sample_analytics", 10*time.Second, clientOptions2)
 	defer mongoPrimary.Disconnect()
 	defer mongoSecondary.Disconnect()
 	assert.NotNil(t, mongoPrimary.Client)

@@ -9,17 +9,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-const PRIMARY = "PRIMARY"
-const SECONDARY_PREFERRED = "SECONDARY_PREFERRED"
-const PRIMARY_PREFERRED = "PRIMARY_PREFERRED"
-
-const DB_TIMEOUT = 10 * time.Second
-const DB_TIMEOUT_MANY = 20 * time.Second
+var DB_timeout = 10 * time.Second
 
 type Client struct {
 	authSource string
@@ -28,26 +20,8 @@ type Client struct {
 
 var MongoClient *Client
 
-func Connect(uri string, authSource, readPreference string, maxPoolSize uint64) *Client {
-	clientOptions := options.Client()
-	clientOptions.ApplyURI(uri).SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
-
-	clientOptions.SetMaxPoolSize(maxPoolSize)
-	clientOptions.SetMaxConnIdleTime(10 * time.Minute)
-	clientOptions.SetWriteConcern(writeconcern.New(writeconcern.W(1)))
-	clientOptions.SetReadConcern(readconcern.Local())
-
-	if readPreference == PRIMARY {
-		clientOptions.SetReadPreference(readpref.Primary())
-	} else if readPreference == PRIMARY_PREFERRED {
-		clientOptions.SetReadPreference(readpref.PrimaryPreferred())
-	} else if readPreference == SECONDARY_PREFERRED {
-		clientOptions.SetReadPreference(readpref.SecondaryPreferred())
-	} else {
-		clientOptions.SetReadPreference(readpref.SecondaryPreferred())
-	}
-
-	c, err := mongo.Connect(context.TODO(), clientOptions)
+func Connect(authSource string, timeout time.Duration, clientOpt *options.ClientOptions) *Client {
+	c, err := mongo.Connect(context.TODO(), clientOpt)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -56,6 +30,7 @@ func Connect(uri string, authSource, readPreference string, maxPoolSize uint64) 
 	if err != nil {
 		panic(err.Error())
 	}
+	DB_timeout = timeout
 	return MongoClient
 }
 
