@@ -83,7 +83,7 @@ func (col *Collection[T]) updateOne(logger Logger, ctx context.Context, filter i
 
 func (col *Collection[T]) updateMany(logger Logger, ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	startTime := time.Now()
-	updateResult, err := col.Collection.UpdateOne(ctx, filter, update, opts...)
+	updateResult, err := col.Collection.UpdateMany(ctx, filter, update, opts...)
 	if time.Since(startTime) >= logger.GetSlowQueryDurationOfMany() {
 		logger.SlowQuery(fmt.Sprintf("%s updateMany slow query(%v) detected. filter: %+v, update: %+v", col.Name(), time.Since(startTime), filter, update))
 	}
