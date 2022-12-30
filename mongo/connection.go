@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"mongo-orm/errorType"
-
+	"github.com/kjh03160/go-mongo/errorType"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
