@@ -10,8 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type Collection[T any] struct {
+	*mongo.Collection
+}
+
+func MakeCollection[T any](mongoClient *Client, databaseName, collectionName string) *Collection[T] {
+	collection := mongoClient.GetCollection(databaseName, collectionName)
+	return &Collection[T]{Collection: collection}
+}
+
 func (col *Collection[T]) FindAll(logger Logger, filter interface{}, opts ...*options.FindOptions) ([]T, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	cursor, err := col.findAll(logger, ctx, filter, opts...)
 	if err != nil {
@@ -25,7 +34,7 @@ func (col *Collection[T]) FindAll(logger Logger, filter interface{}, opts ...*op
 }
 
 func (col *Collection[T]) FindOne(logger Logger, data, filter interface{}, opts ...*options.FindOneOptions) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	singleResult := col.findOne(logger, ctx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
@@ -38,7 +47,7 @@ func (col *Collection[T]) FindOne(logger Logger, data, filter interface{}, opts 
 }
 
 func (col *Collection[T]) FindOneAndModify(logger Logger, data, filter interface{}, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	singleResult := col.findOneAndModify(logger, ctx, filter, update, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
@@ -51,7 +60,7 @@ func (col *Collection[T]) FindOneAndModify(logger Logger, data, filter interface
 }
 
 func (col *Collection[T]) FindOneAndReplace(logger Logger, data, filter interface{}, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	singleResult := col.findOneAndReplace(logger, ctx, filter, replacement, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
@@ -64,7 +73,7 @@ func (col *Collection[T]) FindOneAndReplace(logger Logger, data, filter interfac
 }
 
 func (col *Collection[T]) FindOneAndDelete(logger Logger, data, filter interface{}, opts ...*options.FindOneAndDeleteOptions) error {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	singleResult := col.findOneAndDelete(logger, ctx, filter, opts...)
 	if err := EvaluateAndDecodeSingleResult(singleResult, data); err != nil {
@@ -77,7 +86,7 @@ func (col *Collection[T]) FindOneAndDelete(logger Logger, data, filter interface
 }
 
 func (col *Collection[T]) InsertOne(logger Logger, document interface{}, opts ...*options.InsertOneOptions) (interface{}, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	insertOneResult, err := col.insertOne(logger, ctx, document, opts...)
 	if err != nil {
@@ -87,7 +96,7 @@ func (col *Collection[T]) InsertOne(logger Logger, document interface{}, opts ..
 }
 
 func (col *Collection[T]) InsertMany(logger Logger, documents []interface{}, opts ...*options.InsertManyOptions) (interface{}, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	insertOneResult, err := col.insertMany(logger, ctx, documents, opts...)
 	if err != nil {
@@ -97,7 +106,7 @@ func (col *Collection[T]) InsertMany(logger Logger, documents []interface{}, opt
 }
 
 func (col *Collection[T]) UpdateOne(logger Logger, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	updateResult, err := col.updateOne(logger, ctx, filter, update, opts...)
 	if err != nil {
@@ -110,7 +119,7 @@ func (col *Collection[T]) UpdateOne(logger Logger, filter interface{}, update in
 }
 
 func (col *Collection[T]) UpdateMany(logger Logger, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	updateResult, err := col.updateMany(logger, ctx, filter, update, opts...)
 	if err != nil {
@@ -123,7 +132,7 @@ func (col *Collection[T]) UpdateMany(logger Logger, filter interface{}, update i
 }
 
 func (col *Collection[T]) ReplaceOne(logger Logger, filter interface{}, document interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	result, err := col.replaceOne(logger, ctx, filter, document, opts...)
 	if err != nil {
@@ -136,7 +145,7 @@ func (col *Collection[T]) ReplaceOne(logger Logger, filter interface{}, document
 }
 
 func (col *Collection[T]) DeleteOne(logger Logger, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	deleteResult, err := col.deleteOne(logger, ctx, filter, opts...)
 	if err != nil {
@@ -149,7 +158,7 @@ func (col *Collection[T]) DeleteOne(logger Logger, filter interface{}, opts ...*
 }
 
 func (col *Collection[T]) DeleteMany(logger Logger, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	deleteResult, err := col.deleteMany(logger, ctx, filter, opts...)
 	if err != nil {
@@ -162,7 +171,7 @@ func (col *Collection[T]) DeleteMany(logger Logger, filter interface{}, opts ...
 }
 
 func (col *Collection[T]) CountDocuments(logger Logger, filter interface{}, opts ...*options.CountOptions) (int, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	count, err := col.countDocuments(logger, ctx, filter, opts...)
 	if err != nil {
@@ -172,7 +181,7 @@ func (col *Collection[T]) CountDocuments(logger Logger, filter interface{}, opts
 }
 
 func (col *Collection[T]) EstimatedDocumentCount(logger Logger, opts ...*options.EstimatedDocumentCountOptions) (int, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	count, err := col.estimatedDocumentCount(logger, ctx, opts...)
 	if err != nil {
@@ -182,7 +191,7 @@ func (col *Collection[T]) EstimatedDocumentCount(logger Logger, opts ...*options
 }
 
 func (col *Collection[T]) BulkWrite(logger Logger, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	bulkWriteResult, err := col.bulkWrite(logger, ctx, models, opts...)
 	if err != nil {
@@ -192,7 +201,7 @@ func (col *Collection[T]) BulkWrite(logger Logger, models []mongo.WriteModel, op
 }
 
 func (col *Collection[T]) Aggregate(logger Logger, pipeline interface{}, opts ...*options.AggregateOptions) ([]T, error) {
-	ctx, ctxCancel := context.WithTimeout(context.Background(), DB_timeout)
+	ctx, ctxCancel := context.WithTimeout(context.Background(), logger.GetTimeoutDuration())
 	defer ctxCancel()
 	cursor, err := col.aggregate(logger, ctx, pipeline, opts...)
 	if err != nil {

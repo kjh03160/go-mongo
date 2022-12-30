@@ -3,34 +3,34 @@ package mongo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"mongo-orm/errorType"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var DB_timeout = 10 * time.Second
-
 type Client struct {
-	authSource string
 	*mongo.Client
 }
 
 var MongoClient *Client
 
-func Connect(authSource string, timeout time.Duration, clientOpt *options.ClientOptions) *Client {
-	c, err := mongo.Connect(context.TODO(), clientOpt)
+func Connect(clientOpt *options.ClientOptions) *Client {
+	// Create a new client and connect to the server
+	client, err := mongo.Connect(context.TODO(), clientOpt)
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
-	MongoClient = &Client{authSource, c}
-	err = MongoClient.Ping(context.TODO(), nil)
-	if err != nil {
-		panic(err.Error())
+
+	// Ping the primary
+	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
+		panic(err)
 	}
-	DB_timeout = timeout
+
+	MongoClient = &Client{Client: client}
+	fmt.Println("Successfully connected and pinged.")
 	return MongoClient
 }
 
@@ -39,7 +39,7 @@ func (client *Client) Disconnect() {
 	if err != nil {
 		panic(nil)
 	}
-	fmt.Printf("Connections to MongoDB %s closed\n", client.authSource)
+	fmt.Println("Connections to MongoDB closed")
 }
 
 func (client *Client) GetDatabase(dbName string) *mongo.Database {

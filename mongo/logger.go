@@ -4,5 +4,9 @@ import "time"
 
 type Logger interface {
 	SlowQuery(msg string)
-	GetQueryTimeoutDuration() time.Duration
+	GetTimeoutDuration() time.Duration
+	GetSlowQueryDurationOfOne() time.Duration
+	GetSlowQueryDurationOfMany() time.Duration
+	GetSlowQueryDurationOfBulk() time.Duration
+	GetSlowQueryDurationOfAggregation() time.Duration
 }
