@@ -1,4 +1,4 @@
-module go-mongo
+module github.com/kjh03160/go-mongo
 
 go 1.19
 
