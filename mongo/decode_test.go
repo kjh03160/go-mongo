@@ -90,5 +90,6 @@ func Test_DecodeCursor(t *testing.T) {
 		resultSlice, err := DecodeCursor[data.Account](cursor)
 		assert.NoError(t, err)
 		assert.Empty(t, resultSlice)
+		assert.NotNil(t, resultSlice)
 	})
 }
