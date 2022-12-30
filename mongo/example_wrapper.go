@@ -4,8 +4,7 @@ import (
 	"os"
 	"time"
 
-	"mongo-orm/errorType"
-
+	"github.com/kjh03160/go-mongo/errorType"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
