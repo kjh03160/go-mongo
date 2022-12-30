@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func Test_Connection(t *testing.T) {
-	mongoURI := os.Getenv("local")
 	_ = os.Getenv("user")
 	_ = os.Getenv("password")
 
@@ -16,8 +17,8 @@ func Test_Connection(t *testing.T) {
 		var mongoSecondary *Client
 		var mongoPrimary *Client
 
-		mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-		mongoPrimary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
+		mongoSecondary = Connect(getMongoConfig())
+		mongoPrimary = Connect(getMongoConfig())
 		defer mongoPrimary.Disconnect()
 		defer mongoSecondary.Disconnect()
 		assert.NotNil(t, mongoPrimary.Client)
@@ -30,7 +31,9 @@ func Test_Connection(t *testing.T) {
 			r := recover()
 			assert.NotNil(t, r)
 		}()
-		mongoSecondary = Connect("", "sample_analytics", SECONDARY_PREFERRED, 1)
+		clientOptions := options.Client()
+		clientOptions.ApplyURI("mongoURI").SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
+		mongoSecondary = Connect(clientOptions)
 		assert.Nil(t, mongoSecondary.Client)
 	})
 
@@ -40,40 +43,20 @@ func Test_Connection(t *testing.T) {
 			r := recover()
 			assert.NotNil(t, r)
 		}()
-		mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-		assert.Nil(t, mongoSecondary.Client)
-	})
-
-	t.Run("connection failed - auth source", func(t *testing.T) {
-		var mongoSecondary *Client
-		defer func() {
-			r := recover()
-			assert.NotNil(t, r)
-		}()
-
-		mongoSecondary = Connect(mongoURI, "", SECONDARY_PREFERRED, 1)
-		assert.Nil(t, mongoSecondary.Client)
-	})
-
-	t.Run("connection failed - user", func(t *testing.T) {
-		var mongoSecondary *Client
-		defer func() {
-			r := recover()
-			assert.NotNil(t, r)
-		}()
-
-		mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
+		mongoSecondary = Connect(&options.ClientOptions{})
 		assert.Nil(t, mongoSecondary.Client)
 	})
 }
 
 func Test_GetDatabase(t *testing.T) {
-	mongoURI := os.Getenv("local")
-
 	var mongoSecondary *Client
 	var mongoPrimary *Client
-	mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-	mongoPrimary = Connect(mongoURI, "sample_analytics", PRIMARY, 1)
+	clientOptions := getMongoConfig()
+	clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+	mongoSecondary = Connect(clientOptions)
+	clientOptions2 := getMongoConfig()
+	clientOptions2.SetReadPreference(readpref.PrimaryPreferred())
+	mongoPrimary = Connect(clientOptions2)
 	defer mongoPrimary.Disconnect()
 	defer mongoSecondary.Disconnect()
 	assert.NotNil(t, mongoPrimary.Client)
@@ -87,12 +70,14 @@ func Test_GetDatabase(t *testing.T) {
 }
 
 func Test_GetCollection(t *testing.T) {
-	mongoURI := os.Getenv("local")
-
 	var mongoSecondary *Client
 	var mongoPrimary *Client
-	mongoSecondary = Connect(mongoURI, "sample_analytics", SECONDARY_PREFERRED, 1)
-	mongoPrimary = Connect(mongoURI, "sample_analytics", PRIMARY, 1)
+	clientOptions := getMongoConfig()
+	clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+	mongoSecondary = Connect(clientOptions)
+	clientOptions2 := getMongoConfig()
+	clientOptions2.SetReadPreference(readpref.PrimaryPreferred())
+	mongoPrimary = Connect(clientOptions2)
 	defer mongoPrimary.Disconnect()
 	defer mongoSecondary.Disconnect()
 	assert.NotNil(t, mongoPrimary.Client)

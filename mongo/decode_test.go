@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"mongo-orm/data"
-
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +19,7 @@ func Test_EvaluateAndDecodeSingleResult(t *testing.T) {
 	mt.Run("success", func(t *mtest.T) {
 		col := t.Coll
 
-		expected := data.Account{
+		expected := Account{
 			AccountId: 1,
 		}
 		t.AddMockResponses(mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -31,22 +29,22 @@ func Test_EvaluateAndDecodeSingleResult(t *testing.T) {
 
 		singleResult := col.FindOne(context.Background(), bson.M{})
 
-		var w data.Account
+		var w Account
 		err := EvaluateAndDecodeSingleResult(singleResult, &w)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, w)
 	})
 
 	mt.Run("not found", func(t *mtest.T) {
-		singleResult := mongo.NewSingleResultFromDocument(data.Account{}, mongo.ErrNoDocuments, nil)
-		var w data.Account
+		singleResult := mongo.NewSingleResultFromDocument(Account{}, mongo.ErrNoDocuments, nil)
+		var w Account
 		err := EvaluateAndDecodeSingleResult(singleResult, &w)
 		assert.Error(t, err)
 	})
 
 	mt.Run("err", func(t *mtest.T) {
 		singleResult := mongo.NewSingleResultFromDocument(nil, errors.New("test"), nil)
-		var w data.Account
+		var w Account
 		err := EvaluateAndDecodeSingleResult(singleResult, &w)
 		assert.Error(t, err)
 	})
@@ -73,7 +71,7 @@ func Test_DecodeCursor(t *testing.T) {
 		t.AddMockResponses(find, getMore, killCursors)
 		cursor, err := col.Find(context.Background(), bson.M{})
 
-		resultSlice, err := DecodeCursor[data.Account](cursor)
+		resultSlice, err := DecodeCursor[Account](cursor)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, resultSlice)
 	})
@@ -87,8 +85,9 @@ func Test_DecodeCursor(t *testing.T) {
 
 		cursor, err := col.Find(context.Background(), bson.M{})
 
-		resultSlice, err := DecodeCursor[data.Account](cursor)
+		resultSlice, err := DecodeCursor[Account](cursor)
 		assert.NoError(t, err)
 		assert.Empty(t, resultSlice)
+		assert.NotNil(t, resultSlice)
 	})
 }

@@ -20,7 +20,7 @@ func EvaluateAndDecodeSingleResult(result *mongo.SingleResult, v interface{}) er
 
 func DecodeCursor[T any](cursor *mongo.Cursor) ([]T, error) {
 	defer cursor.Close(context.Background())
-	var slice []T
+	slice := []T{}
 	for cursor.Next(context.Background()) {
 		var doc T
 		if err := cursor.Decode(&doc); err != nil {
