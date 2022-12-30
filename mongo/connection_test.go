@@ -3,28 +3,11 @@ package mongo
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
-
-func getMongoConfig() *options.ClientOptions {
-	mongoURI := os.Getenv("local")
-
-	clientOptions := options.Client()
-	clientOptions.ApplyURI(mongoURI).SetServerAPIOptions(options.ServerAPI(options.ServerAPIVersion1))
-
-	clientOptions.SetMaxPoolSize(1)
-	clientOptions.SetMaxConnIdleTime(10 * time.Minute)
-	clientOptions.SetWriteConcern(writeconcern.New(writeconcern.W(1)))
-	clientOptions.SetReadConcern(readconcern.Local())
-	clientOptions.SetReadPreference(readpref.SecondaryPreferred())
-	return clientOptions
-}
 
 func Test_Connection(t *testing.T) {
 	_ = os.Getenv("user")

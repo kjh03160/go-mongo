@@ -14,7 +14,7 @@ type Collection[T any] struct {
 	*mongo.Collection
 }
 
-func MakeCollection[T any](mongoClient *Client, databaseName, collectionName string) *Collection[T] {
+func NewCollection[T any](mongoClient *Client, databaseName, collectionName string) *Collection[T] {
 	collection := mongoClient.GetCollection(databaseName, collectionName)
 	return &Collection[T]{Collection: collection}
 }

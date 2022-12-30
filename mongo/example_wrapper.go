@@ -36,7 +36,7 @@ func getMongoConfig() *options.ClientOptions {
 
 func example_finoOne() {
 	client := Connect(getMongoConfig())
-	collection := MakeCollection[Account](MongoClient, "sample_analytics", "accounts")
+	collection := NewCollection[Account](MongoClient, "sample_analytics", "accounts")
 	defer client.Disconnect()
 
 	logger := MyLogger{logrus.New()}
@@ -56,7 +56,7 @@ func example_finoOne() {
 
 func example_find_all() {
 	client := Connect(getMongoConfig())
-	collection := MakeCollection[Account](MongoClient, "sample_analytics", "accounts")
+	collection := NewCollection[Account](MongoClient, "sample_analytics", "accounts")
 	defer client.Disconnect()
 
 	logger := MyLogger{logrus.New()}
@@ -76,7 +76,7 @@ func example_find_all() {
 
 func example_insert_many() {
 	client := Connect(getMongoConfig())
-	collection := MakeCollection[Account](MongoClient, "sample_analytics", "accounts")
+	collection := NewCollection[Account](MongoClient, "sample_analytics", "accounts")
 	defer client.Disconnect()
 
 	logger := MyLogger{logrus.New()}
