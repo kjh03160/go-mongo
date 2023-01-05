@@ -6,30 +6,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type MyLogger struct {
+type myLogger struct {
 	*logrus.Logger
 }
 
-func (l *MyLogger) SlowQuery(msg string) {
+func (l *myLogger) SlowQuery(msg string) {
 	l.Error(msg)
 }
 
-func (l *MyLogger) GetTimeoutDuration() time.Duration {
+func (l *myLogger) GetTimeoutDuration() time.Duration {
 	return 10 * time.Second
 }
 
-func (l *MyLogger) GetSlowQueryDurationOfOne() time.Duration {
+func (l *myLogger) GetSlowQueryDurationOfOne() time.Duration {
 	return 1 * time.Second
 }
 
-func (l *MyLogger) GetSlowQueryDurationOfMany() time.Duration {
+func (l *myLogger) GetSlowQueryDurationOfMany() time.Duration {
 	return 2 * time.Second
 }
 
-func (l *MyLogger) GetSlowQueryDurationOfBulk() time.Duration {
+func (l *myLogger) GetSlowQueryDurationOfBulk() time.Duration {
 	return 3 * time.Second
 }
 
-func (l *MyLogger) GetSlowQueryDurationOfAggregation() time.Duration {
+func (l *myLogger) GetSlowQueryDurationOfAggregation() time.Duration {
 	return 10 * time.Second
 }

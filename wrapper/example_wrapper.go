@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-type Account struct {
+type account struct {
 	AccountId int      `json:"account_id" bson:"account_id"`
 	Limit     int      `json:"limit" bson:"limit"`
 	Products  []string `json:"products" bson:"products"`
@@ -35,13 +35,13 @@ func getMongoConfig() *options.ClientOptions {
 
 func example_finoOne() {
 	client := Connect(getMongoConfig())
-	collection := NewCollection[Account](MongoClient, "sample_analytics", "accounts")
+	collection := NewCollection[account](MongoClient, "sample_analytics", "accounts")
 	defer client.Disconnect()
 
-	logger := MyLogger{logrus.New()}
+	logger := myLogger{logrus.New()}
 	accountId := 1
 
-	var t Account
+	var t account
 	if err := collection.FindOne(&logger, &t, bson.M{"account_id": accountId}); err != nil {
 		if errorType.IsNotFoundErr(err) {
 			logger.Warn(err.Error())
@@ -55,10 +55,10 @@ func example_finoOne() {
 
 func example_find_all() {
 	client := Connect(getMongoConfig())
-	collection := NewCollection[Account](MongoClient, "sample_analytics", "accounts")
+	collection := NewCollection[account](MongoClient, "sample_analytics", "accounts")
 	defer client.Disconnect()
 
-	logger := MyLogger{logrus.New()}
+	logger := myLogger{logrus.New()}
 
 	all, err := collection.FindAll(&logger, bson.M{})
 	if err != nil {
@@ -75,12 +75,12 @@ func example_find_all() {
 
 func example_insert_many() {
 	client := Connect(getMongoConfig())
-	collection := NewCollection[Account](MongoClient, "sample_analytics", "accounts")
+	collection := NewCollection[account](MongoClient, "sample_analytics", "accounts")
 	defer client.Disconnect()
 
-	logger := MyLogger{logrus.New()}
+	logger := myLogger{logrus.New()}
 
-	var result []Account
+	var result []account
 	accounts, _ := collection.FindAll(&logger, bson.M{})
 
 	accounts = result[:2]
