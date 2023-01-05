@@ -8,59 +8,71 @@ import (
 )
 
 func IsNotFoundErr(err error) bool {
-	switch err.(type) {
-	case *notFoundError:
-		return true
-	default:
-		return false
+	for err != nil {
+		switch err.(type) {
+		case *notFoundError:
+			return true
+		}
+		err = errors.Unwrap(err)
 	}
+	return false
 }
 
 func IsDuplicatedKeyErr(err error) bool {
-	switch err.(type) {
-	case *duplicatedKeyError:
-		return true
-	default:
-		return false
+	for err != nil {
+		switch err.(type) {
+		case *duplicatedKeyError:
+			return true
+		}
+		err = errors.Unwrap(err)
 	}
+	return false
 }
 
 func IsTimeoutError(err error) bool {
-	switch err.(type) {
-	case *timeoutError:
-		return true
-	default:
-		return false
+	for err != nil {
+		switch err.(type) {
+		case *timeoutError:
+			return true
+		}
+		err = errors.Unwrap(err)
 	}
+	return false
 }
 
 func IsMongoClientError(err error) bool {
-	switch err.(type) {
-	case *mongoClientError:
-		return true
-	default:
-		return false
+	for err != nil {
+		switch err.(type) {
+		case *mongoClientError:
+			return true
+		}
+		err = errors.Unwrap(err)
 	}
+	return false
 }
 
 func IsDBInternalErr(err error) bool {
-	switch err.(type) {
-	case *internalError,
-		*timeoutError,
-		*mongoClientError:
-		return true
-	default:
-		return false
+	for err != nil {
+		switch err.(type) {
+		case *internalError,
+			*timeoutError,
+			*mongoClientError:
+			return true
+		}
+		err = errors.Unwrap(err)
 	}
+	return false
 }
 
 func IsDecodeError(err error) bool {
-	switch err.(type) {
-	case *decodeError:
-		return true
-	default:
-		return false
+	for err != nil {
+		switch err.(type) {
+		case *decodeError:
+			return true
+		}
+		err = errors.Unwrap(err)
 	}
+	return false
 }
 
 func ParseAndReturnDBError(err error, collection string, filter, update, doc interface{}) error {
