@@ -104,8 +104,8 @@ func connect_mongo() {
 Call `NewCollection(client, databaseName, collectionName)` function with the type of struct to be decoded.
 ```go
 import (
-"github.com/kjh03160/go-mongo/wrapper"
-"go.mongodb.org/mongo-driver/mongo/options"
+  "github.com/kjh03160/go-mongo/wrapper"
+  "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Account struct {
@@ -244,7 +244,7 @@ func transaction() {
 
 ### Slow Query And Timeout
 Also, if slow query is detected, logger will log about slow query info.
-What you have to do is to implement `Logger` interface
+What you have to do is implementing `Logger` interface
 ```go
 type Logger interface {
 	// log slow query
@@ -310,7 +310,7 @@ There are six errors we provide.
     However, if ModifiedCount is zero, error is nil.**
   - In find all query, even if result slice is empty, it does not return `notFoundError`, but `nil`
 - `duplicatedKeyError`
-  - if Mongo Driver return error and `mongo.IsDuplicateKeyError(err)`, provided by Mongo Driver
+  - if Mongo Driver return error and `mongo.IsDuplicateKeyError(err)` is true, provided by Mongo Driver
 - `timeoutError`
   - when context deadline exceed(`logger.GetTimeoutDuration()`) or `mongo.IsTimeout(err)` provided by Mongo Driver
 - `mongoClientError`
@@ -335,9 +335,6 @@ It provides you collection name, kind of error, and query info. (query info is p
 ```text
 accounts not found. | {query info: filter: map[account_id:0]}
 ```
-
-In update query, if not matched count is zero in updateResult, it will return not found error.
-However, if ModifiedCount is zero, error is nil
 
 -------------------------
 ## Feedback / Contribution
